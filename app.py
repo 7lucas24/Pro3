@@ -11,7 +11,6 @@ if not os.path.exists("accidentes/"):
 
     url = "https://www.inegi.org.mx/contenidos/programas/accidentes/datosabiertos/conjunto_de_datos_atus_anual_csv.zip"
     response = requests.get(url)
-    response = requests.get(url)
 
     with zipfile.ZipFile(io.BytesIO(response.content)) as z:
         z.extractall("accidentes/")
