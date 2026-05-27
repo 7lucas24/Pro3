@@ -6,21 +6,25 @@ import time
 
 def process_csv_to_parquet():
     print("Inicializando Ray...")
-    ray.init(ignore_reinit_error=True)
+    ray.init(address="ray://localhost:10001", ignore_reinit_error=True)
     
-    input_dir = "accidentes/conjunto_de_datos"
-    output_dir = "accidentes_parquet"
+    input_dir_local = "accidentes/conjunto_de_datos"
+    output_dir_local = "accidentes_parquet"
     
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    if not os.path.exists(output_dir_local):
+        os.makedirs(output_dir_local)
 
-    print(f"Leyendo CSVs desde {input_dir}...")
+    print(f"Leyendo CSVs desde {input_dir_local}...")
     start_time = time.time()
     
     # Custom read with pandas in a Ray task to handle messy CSVs
     @ray.remote
     def process_file(filename):
-        filepath = os.path.join(input_dir, filename)
+        # Si corre dentro de Docker, usa la ruta del volumen (/app), si no, la local
+        base_input = "/app/accidentes/conjunto_de_datos" if os.path.exists("/app/accidentes") else "accidentes/conjunto_de_datos"
+        base_output = "/app/accidentes_parquet" if os.path.exists("/app/accidentes_parquet") else "accidentes_parquet"
+        
+        filepath = os.path.join(base_input, filename)
         try:
             # Read CSV. It has weird whitespaces and possibly a BOM in older files
             df = pd.read_csv(filepath, encoding="utf-8-sig", low_memory=False)
@@ -54,13 +58,13 @@ def process_csv_to_parquet():
                     df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
 
             # Output path
-            out_file = os.path.join(output_dir, filename.replace('.csv', '.parquet'))
+            out_file = os.path.join(base_output, filename.replace('.csv', '.parquet'))
             df.to_parquet(out_file, index=False)
             return f"Procesado: {filename}"
         except Exception as e:
             return f"Error procesando {filename}: {str(e)}"
 
-    files = [f for f in os.listdir(input_dir) if f.endswith('.csv')]
+    files = [f for f in os.listdir(input_dir_local) if f.endswith('.csv')]
     futures = [process_file.remote(f) for f in files]
     
     results = ray.get(futures)

@@ -5,6 +5,8 @@ import requests
 import os
 import io
 import zipfile
+import subprocess
+
 
 if not os.path.exists("accidentes/"):
     print("Descargando datos...")
@@ -17,18 +19,9 @@ if not os.path.exists("accidentes/"):
     print("Listo!")
 else:
     print("Los datos ya existen, omitiendo descarga.")# Conectarse al clúster real (no local)
-ray.init(address="ray://localhost:10001")
 
-print(ray.cluster_resources())  # Verás los recursos de TODOS los nodos
+print("Ejecutando procesar_datos.py...")
+subprocess.run(["python", "procesar_datos.py"], check=True)
 
-@ray.remote
-def tarea(x):
-    import socket
-    # Esto te muestra en qué contenedor corrió la tarea
-    return f"resultado={x*2} | nodo={socket.gethostname()}"
-
-futures = [tarea.remote(i) for i in range(20)]
-resultados = ray.get(futures)
-
-for r in resultados:
-    print(r)
+print("Iniciando Streamlit dashboard...")
+subprocess.run(["streamlit", "run", "dashboard.py"], check=True)

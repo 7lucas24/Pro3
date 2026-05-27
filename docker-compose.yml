@@ -14,6 +14,8 @@ services:
       - "8265:8265"      # Dashboard
       - "10001:10001"    # Cliente externo
     shm_size: "2gb"      # Memoria compartida (importante para Ray)
+    volumes:
+      - .:/app
     networks:
       - ray-net
 
@@ -24,6 +26,8 @@ services:
       --address=ray-head:6379
       --block
     shm_size: "2gb"
+    volumes:
+      - .:/app
     depends_on:
       - ray-head
     networks:
@@ -36,6 +40,8 @@ services:
       --address=ray-head:6379
       --block
     shm_size: "2gb"
+    volumes:
+      - .:/app
     depends_on:
       - ray-head
     networks:
