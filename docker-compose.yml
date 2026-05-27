@@ -1,0 +1,46 @@
+version: "3.8"
+
+services:
+  ray-head:
+    build: .
+    command: >
+      ray start --head
+      --port=6379
+      --dashboard-host=0.0.0.0
+      --dashboard-port=8265
+      --block
+    ports:
+      - "6379:6379"      # Ray cluster
+      - "8265:8265"      # Dashboard
+      - "10001:10001"    # Cliente externo
+    shm_size: "2gb"      # Memoria compartida (importante para Ray)
+    networks:
+      - ray-net
+
+  ray-worker-1:
+    build: .
+    command: >
+      ray start
+      --address=ray-head:6379
+      --block
+    shm_size: "2gb"
+    depends_on:
+      - ray-head
+    networks:
+      - ray-net
+
+  ray-worker-2:
+    build: .
+    command: >
+      ray start
+      --address=ray-head:6379
+      --block
+    shm_size: "2gb"
+    depends_on:
+      - ray-head
+    networks:
+      - ray-net
+
+networks:
+  ray-net:
+    driver: bridge
